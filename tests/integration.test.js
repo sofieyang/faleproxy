@@ -122,11 +122,17 @@ describe('Integration Tests', () => {
   });
 
   test('Should handle invalid URLs', async () => {
+    // Suppress console.error for this test since we're intentionally testing error handling
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
     const response = await request(app)
       .post('/fetch')
       .send({ url: 'not-a-valid-url' });
     
     expect(response.status).toBe(500);
+    
+    // Restore console.error
+    consoleSpy.mockRestore();
   });
 
   test('Should handle missing URL parameter', async () => {
