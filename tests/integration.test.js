@@ -3,73 +3,10 @@ const cheerio = require('cheerio');
 const { sampleHtmlWithYale } = require('./test-utils');
 const nock = require('nock');
 
-// Import the app directly (we'll need to modify it slightly for testing)
-// For now, let's create a test version that doesn't start the server
-const express = require('express');
-const axios = require('axios');
-const path = require('path');
-
-// Create the app for testing (same as app.js but without listening)
-function createApp() {
-  const app = express();
-  
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.static(path.join(__dirname, '..', 'public')));
-  
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-  });
-  
-  app.post('/fetch', async (req, res) => {
-    try {
-      const { url } = req.body;
-      
-      if (!url) {
-        return res.status(400).json({ error: 'URL is required' });
-      }
-
-      const response = await axios.get(url);
-      const html = response.data;
-
-      const $ = cheerio.load(html);
-      
-      $('body *').contents().filter(function() {
-        return this.nodeType === 3;
-      }).each(function() {
-        const text = $(this).text();
-        const newText = text.replace(/Yale/g, 'Fale').replace(/yale/g, 'fale').replace(/YALE/g, 'FALE');
-        if (text !== newText) {
-          $(this).replaceWith(newText);
-        }
-      });
-      
-      const title = $('title').text().replace(/Yale/g, 'Fale').replace(/yale/g, 'fale').replace(/YALE/g, 'FALE');
-      $('title').text(title);
-      
-      return res.json({ 
-        success: true, 
-        content: $.html(),
-        title: title,
-        originalUrl: url
-      });
-    } catch (error) {
-      console.error('Error fetching URL:', error.message);
-      return res.status(500).json({ 
-        error: `Failed to fetch content: ${error.message}` 
-      });
-    }
-  });
-  
-  return app;
-}
+// Import the actual app (it won't start the server when imported)
+const app = require('../app');
 
 describe('Integration Tests', () => {
-  let app;
-
-  beforeAll(() => {
-    app = createApp();
-  });
 
   beforeEach(() => {
     // Clean nock before each test to ensure fresh mocks
